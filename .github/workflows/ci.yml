@@ -10,6 +10,32 @@ jobs:
   checks:
     runs-on: ubuntu-latest
     steps:
+    name: CI
+
+on:
+  pull_request:
+    branches: [dev, staging, main]
+
+
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Tests
+        run: pytest -q || [ $? -eq 5 ]
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
