@@ -1,0 +1,27 @@
+name: Staging
+
+on:
+  push:
+    branches: [staging]
+
+jobs:
+  staging:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build release candidate
+        run: docker build -t "mlops-entrainement:$GITHUB_SHA" .
+
+      - name: Run release candidate
+        run: docker run -d --name app -p 8000:8000 "mlops-entrainement:$GITHUB_SHA"
+
+      - name: Smoke test
+        run: bash scripts/smoke.sh http://localhost:8000
+
+      - name: Container logs
+        if: always()
+        run: docker logs app || true
+
+      - name: Summary
+        run: echo "Release candidate $GITHUB_SHA OK" >> "$GITHUB_STEP_SUMMARY"
