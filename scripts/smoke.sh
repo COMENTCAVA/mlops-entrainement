@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
 url="$1"
+timeout="${SMOKE_TIMEOUT:-30}"
+end=$((SECONDS + timeout))
 
-for i in $(seq 1 15); do
-  if curl -fsS "$url/ready" > /dev/null 2>&1; then
-    if curl -fsS "$url/add?a=2&b=3" | grep -q '"result":5'; then
-      echo "Smoke test OK"
+while [ "$SECONDS" -lt "$end" ]; do
+  if curl -fsS --max-time 10 "$url/ready" > /dev/null 2>&1; then
+    if curl -fsS --max-time 10 "$url/add?a=2&b=3" | grep -q '"result":5'; then
+      echo "Smoke test OK on $url"
       exit 0
     fi
   fi
-  sleep 2
+  sleep 5
 done
 
 echo "Smoke test failed for $url" >&2
