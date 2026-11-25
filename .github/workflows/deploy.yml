@@ -1,0 +1,34 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify image builds
+        run: docker build -t "mlops-entrainement:$GITHUB_SHA" .
+
+      - name: Deploy this commit to Render
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: curl -fsS -X POST "$RENDER_DEPLOY_HOOK&ref=$GITHUB_SHA"
+
+      - name: Wait for the new deploy
+        run: sleep 60
+
+      - name: Live smoke test
+        env:
+          SMOKE_TIMEOUT: 600
+        run: bash scripts/smoke.sh "${{ vars.PROD_URL }}"
+
+      - name: Summary
+        run: echo "Commit $GITHUB_SHA deployed to ${{ vars.PROD_URL }}" >> "$GITHUB_STEP_SUMMARY"
